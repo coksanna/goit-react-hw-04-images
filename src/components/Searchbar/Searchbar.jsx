@@ -1,59 +1,50 @@
-import { Component } from 'react';
+import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { ImSearch } from 'react-icons/im';
 
 import css from './searchbar.module.css';
 
-class Searchbar extends Component {
-  state = {
-    search: '',
-  };
+const Searchbar = ({ onSubmit }) => {
+  const [state, setState] = useState({ search: '' });
 
-  handleChange = ({ target }) => {
+  const handleChange = ({ target }) => {
     const { name, value } = target;
-    this.setState({ [name]: value });
-  };
-
-  handleSubmit = e => {
-    e.preventDefault();
-    const { onSubmit } = this.props;
-    onSubmit({ ...this.state });
-    this.reset();
-  };
-
-  reset() {
-    this.setState({
-      search: '',
+    setState(prevState => {
+      return { ...prevState, [name]: value };
     });
-  }
-  render() {
-    const { search } = this.state;
-    const { handleChange, handleSubmit } = this;
+  };
 
-    return (
-      <header className={css.searchbar}>
-        <form className={css.searchForm} onSubmit={handleSubmit}>
-          <button type="submit" className={css.searchFormButton}>
-            <span>
-              <ImSearch />
-            </span>
-          </button>
-          <input
-            className={css.searchFormInput}
-            type="text"
-            autoComplete="off"
-            value={search}
-            onChange={handleChange}
-            name="search"
-            autoFocus
-            placeholder="Search images and photos"
-            required
-          />
-        </form>
-      </header>
-    );
-  }
-}
+  const handleSubmit = e => {
+    e.preventDefault();
+    onSubmit({ ...state });
+    setState({ search: '' });
+  };
+
+  const { search } = state;
+
+  return (
+    <header className={css.searchbar}>
+      <form className={css.searchForm} onSubmit={handleSubmit}>
+        <button type="submit" className={css.searchFormButton}>
+          <span>
+            <ImSearch />
+          </span>
+        </button>
+        <input
+          className={css.searchFormInput}
+          type="text"
+          autoComplete="off"
+          value={search}
+          onChange={handleChange}
+          name="search"
+          autoFocus
+          placeholder="Search images and photos"
+          required
+        />
+      </form>
+    </header>
+  );
+};
 
 export default Searchbar;
 

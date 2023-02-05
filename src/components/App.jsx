@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 import Searchbar from './Searchbar/Searchbar';
 import ImageGallery from './ImageGallery/ImageGallery';
@@ -6,95 +6,85 @@ import Modal from './Modal/Modal';
 import Button from './Button/Button';
 import Loader from './Loader/Loader';
 
-import { searchImages } from './services/pixabay-api';
+import { searchImages } from '../services/pixabay-api';
 
-export class App extends Component {
-  state = {
-    search: '',
-    items: [],
-    loading: false,
-    error: null,
-    page: 1,
-    showModal: false,
-    fullSize: '',
-    tags: 0,
-    total: 0,
-  };
+export const App = () => {
+  const [search, setSearch] = useState('');
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [showModal, setShowModal] = useState(false);
+  const [fullSize, setFullSize] = useState('');
+  const [tags, setTags] = useState('');
+  const [total, setTotal] = useState(0);
 
-  componentDidUpdate(prevProps, prevState) {
-    const { search, page } = this.state;
-    if (prevState.search !== search || prevState.page !== page) {
-      this.fetchPosts();
-    }
-  }
-
-  async fetchPosts() {
-    try {
-      this.setState({ loading: true });
-      const { search, page } = this.state;
-      const data = await searchImages(search, page);
-      this.setState(({ items }) => ({
-        items: [...items, ...data.hits],
-        total: data.totalHits,
-      }));
-    } catch (error) {
-      this.setState({ error: error.message });
-    } finally {
-      this.setState({ loading: false });
-    }
-  }
-
-  searchImages = ({ search }) => {
-    if (search === this.state.search) {
+  // componentDidUpdate(prevProps, prevState) {
+  //   const { search, page } = this.state;
+  //   if (prevState.search !== search || prevState.page !== page) {
+  //     this.fetchPosts();
+  //   }
+  // }
+  useEffect(() => {
+    if (!search) {
       return;
     }
-    this.setState({ search, items: [], page: 1 });
-  };
 
-  loadMore = () => {
-    this.setState(({ page }) => ({ page: page + 1 }));
-  };
+    const fetchPosts = async () => {
+      try {
+        setLoading(true);
+        const data = await searchImages(search, page);
+        setItems(prevItems => [...prevItems, ...data.hits]);
+        setTotal(data.totalHits);
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  showImage = data => {
-    this.setState({
-      fullSize: data,
-      showModal: true,
-    });
-  };
+    fetchPosts();
+  }, [search, page, setLoading, setItems, setError]);
 
-  closeModal = () => {
-    this.setState({
-      showModal: false,
-      largeImageURL: '',
-    });
-  };
+  const onSearchImages = useCallback(({ search }) => {
+    setSearch(search);
+    setItems([]);
+    setPage(1);
+  }, []);
 
-  render() {
-    const { items, loading, showModal, fullSize, tags, page, total } =
-      this.state;
-    const { searchImages, loadMore, showImage, closeModal } = this;
-    const totalPage = Math.ceil(total / 12);
+  const loadMore = useCallback(() => {
+    setPage(prevPage => prevPage + 1);
+  }, []);
 
-    return (
-      <>
-        <Searchbar onSubmit={searchImages} />
+  const showImage = useCallback(data => {
+    setFullSize(data);
+    setTags(data);
+    setShowModal(true);
+  }, []);
 
-        {items.length > 0 && (
-          <ImageGallery items={items} showImage={showImage} />
-        )}
+  const closeModal = useCallback(() => {
+    setShowModal(false);
+    setFullSize('');
+  }, []);
 
-        {items.length > 0 && page < totalPage && !loading && (
-          <Button loadMore={loadMore} />
-        )}
+  const totalPage = Math.ceil(total / 12);
 
-        {loading && <Loader text="Loading..." />}
+  return (
+    <>
+      <Searchbar onSubmit={onSearchImages} />
+      <ImageGallery items={items} showImage={showImage} />
+      {error && <p>{error}</p>}
+      {items.length > 0 && page < totalPage && !loading && (
+        <Button loadMore={loadMore} />
+      )}
 
-        {showModal && (
-          <Modal close={closeModal}>
-            <img src={fullSize} alt={tags} />
-          </Modal>
-        )}
-      </>
-    );
-  }
-}
+      {loading && <Loader text="Loading..." />}
+
+      {showModal && (
+        <Modal close={closeModal}>
+          <img src={fullSize} alt={tags} />
+        </Modal>
+      )}
+    </>
+  );
+};
