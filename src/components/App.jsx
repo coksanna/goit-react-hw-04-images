@@ -30,7 +30,7 @@ export const App = () => {
       return;
     }
 
-    const fetchPosts = async () => {
+    const fetchImages = async () => {
       try {
         setLoading(true);
         const data = await searchImages(search, page);
@@ -43,14 +43,16 @@ export const App = () => {
       }
     };
 
-    fetchPosts();
+    fetchImages();
   }, [search, page, setLoading, setItems, setError]);
 
-  const onSearchImages = useCallback(({ search }) => {
-    setSearch(search);
-    setItems([]);
-    setPage(1);
-  }, []);
+  const onSearchImages = query => {
+    if (query.search !== search) {
+      setSearch(query.search);
+      setItems([]);
+      setPage(1);
+    }
+  };
 
   const loadMore = useCallback(() => {
     setPage(prevPage => prevPage + 1);
